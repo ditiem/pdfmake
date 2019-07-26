@@ -62297,12 +62297,15 @@ var TableProcessor_TableProcessor =
 function () {
   function TableProcessor(tableNode) {
     this.tableNode = tableNode;
+    this.bgVectorIndex = [];
   }
 
   var _proto = TableProcessor.prototype;
 
   _proto.beginTable = function beginTable(writer) {
     var _this = this;
+
+    this.bgVectorIndex.push(writer.context().getCurrentPage().items.length);
 
     var getTableInnerContentWidth = function getTableInnerContentWidth() {
       var width = 0;
@@ -62640,6 +62643,8 @@ function () {
     if (this.cleanUpRepeatables) {
       writer.popFromRepeatables();
     }
+
+    this.bgVectorIndex.pop();
   };
 
   _proto.endRow = function endRow(rowIndex, writer, pageBreaks) {
@@ -62775,7 +62780,7 @@ function () {
               h: y2f - y1f,
               lineWidth: 0,
               color: fillColor
-            }, false, true, writer.context().backgroundLength[writer.context().page]);
+            }, false, true, this.bgVectorIndex[this.bgVectorIndex.length - 1]); // writer.context().backgroundLength[writer.context().page]);
           }
         }
       }
@@ -63017,6 +63022,7 @@ function () {
     this.pageMargins = pageMargins;
     this.svgMeasure = svgMeasure;
     this.tableLayouts = {};
+    this.parentPositions = []; // Array<{x,y}>
   }
 
   var _proto = LayoutBuilder.prototype;
@@ -63298,6 +63304,12 @@ function () {
   _proto.processNode = function processNode(node) {
     var _this2 = this;
 
+    var context = this.writer.context(),
+        nodeInitialPosition = {
+      x: context.x,
+      y: context.y
+    };
+
     var applyMargins = function applyMargins(callback) {
       var margin = node._margin;
 
@@ -63333,6 +63345,19 @@ function () {
         _this2.writer.beginUnbreakableBlock();
       }
 
+      var relParentPosition = node.relativeParentPosition;
+
+      if (relParentPosition) {
+        var parentPos = _this2.parentPositions[_this2.parentPositions.length - 1] || {
+          x: 0,
+          y: 0
+        };
+
+        _this2.writer.context().beginDetachedBlock();
+
+        _this2.writer.context().moveTo((relParentPosition.x || 0) + parentPos.x, (relParentPosition.y || 0) + parentPos.y);
+      }
+
       var absPosition = node.absolutePosition;
 
       if (absPosition) {
@@ -63348,6 +63373,8 @@ function () {
 
         _this2.writer.context().moveToRelative(relPosition.x || 0, relPosition.y || 0);
       }
+
+      _this2.parentPositions.push(nodeInitialPosition);
 
       if (node.stack) {
         _this2.processVerticalContainer(node);
@@ -63375,13 +63402,15 @@ function () {
         throw new Error("Unrecognized document structure: " + Object(helpers_node["c" /* stringifyNode */])(node));
       }
 
-      if (absPosition || relPosition) {
+      if (absPosition || relPosition || relParentPosition) {
         _this2.writer.context().endDetachedBlock();
       }
 
       if (unbreakable) {
         _this2.writer.commitUnbreakableBlock();
       }
+
+      _this2.parentPositions.pop();
     });
   } // vertical container
   ;
@@ -63696,6 +63725,8 @@ function () {
   _proto.processImage = function processImage(node) {
     var position = this.writer.addImage(node);
     node.positions.push(position);
+    var context = this.writer.context();
+    context.backgroundLength[context.page]++;
   };
 
   _proto.processCanvas = function processCanvas(node) {
