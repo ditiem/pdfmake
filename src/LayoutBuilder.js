@@ -458,6 +458,9 @@ class LayoutBuilder {
 				}
 			}
 
+ 		if ( column._width > width )
+						  this.applyWidthConstraint( column, width ) ;
+
 			this.writer.context().beginColumn(width, leftOffset, getEndingCell(column, i));
 			if (!column._span) {
 				this.processNode(column);
@@ -491,6 +494,15 @@ class LayoutBuilder {
 			}
 
 			return null;
+		}
+	}
+
+	applyWidthConstraint ( column, width )	{
+		if ( column._width > width ) {
+			if ( column._height ) {
+			 column._height = width * column._height / Math.max( column._width, 1 );
+			}
+			column._width = width ;
 		}
 	}
 
