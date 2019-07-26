@@ -195,10 +195,12 @@ class LayoutBuilder {
 
 			if (node) {
 				let sizes = sizeFunction(this.writer.context().getCurrentPage().pageSize, this.pageMargins);
+				this.writer.beginClipBBox(sizes);
 				this.writer.beginUnbreakableBlock(sizes.width, sizes.height);
 				node = this.docPreprocessor.preprocessDocument(node);
 				this.processNode(this.docMeasure.measureDocument(node));
 				this.writer.commitUnbreakableBlock(sizes.x, sizes.y);
+				this.writer.endClip( ) ;
 			}
 		}
 	}
