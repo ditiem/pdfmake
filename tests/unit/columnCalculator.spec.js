@@ -48,6 +48,22 @@ describe('ColumnCalculator', function () {
 			});
 		});
 
+		it('should parse correctly the number of stars', function () {
+			var cases = [ [ '*', 1 ]
+               , [ undefined, 1 ]
+															, [ '', 1 ]
+															, [ 'star', 1 ]
+															, [ null, 1 ]
+															, [ '*2', 2 ]
+															, [ '*ouch', 1 ]
+															, [ '*10', 10 ] ] ;
+	
+   cases.forEach(function (c) {
+				assert.equal(ColumnCalculator.numStars(c[0]),c[1]);
+			});
+		});
+
+
 		it('should equally divide availableSpace to star columns', function () {
 			var columns = [
 				{ width: '*', _minWidth: 30, _maxWidth: 41 },
@@ -113,6 +129,20 @@ describe('ColumnCalculator', function () {
 			assert(columns[1]._calcWidth > 31);
 			assert.equal(columns[0]._calcWidth, columns[0]._calcWidth);
 			assert.equal(columns[0]._calcWidth + columns[1]._calcWidth + columns[2]._calcWidth, 320);
+		});
+
+		it('assigns each column the width proportional to the one specified in the star notation, like flex in CSS', function () {
+			var columns = [
+				{ width: '*' , _minWidth: 30, _maxWidth: 100 },
+				{ width: '*3', _minWidth: 31, _maxWidth: 100 },
+				{ width: '*2', _minWidth: 33, _maxWidth: 100 },
+			];
+
+			ColumnCalculator.buildColumnWidths(columns, 320);
+			assert.equal(columns[0]._calcWidth + columns[1]._calcWidth + columns[2]._calcWidth, 320);
+			assert.equal(columns[0]._calcWidth,     320 / 6 );
+			assert.equal(columns[1]._calcWidth, 3 * 320 / 6 );
+			assert.equal(columns[2]._calcWidth, 2 * 320 / 6 );
 		});
 	});
 });

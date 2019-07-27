@@ -7,6 +7,7 @@ function buildColumnWidths(columns, availableWidth) {
 	let starColumns = [];
 	let starMaxMin = 0;
 	let starMaxMax = 0;
+	let totalStars = 0;
 	let fixedColumns = [];
 	let initial_availableWidth = availableWidth;
 
@@ -17,32 +18,29 @@ function buildColumnWidths(columns, availableWidth) {
 			autoMax += column._maxWidth;
 		} else if (isStarColumn(column)) {
 			starColumns.push(column);
-			starMaxMin = Math.max(starMaxMin, column._minWidth);
-			starMaxMax = Math.max(starMaxMax, column._maxWidth);
+			const stars = numStars(column.width);
+			totalStars += stars;
+			starMaxMin = Math.min(starMaxMin, column._minWidth/stars);
+			starMaxMax = Math.max(starMaxMax, column._maxWidth/stars);
 		} else {
 			fixedColumns.push(column);
 		}
 	});
 
 	fixedColumns.forEach(col => {
-		// width specified as %
-		if (isString(col.width) && /\d+%/.test(col.width)) {
-			col.width = parseFloat(col.width) * initial_availableWidth / 100;
-		}
-		if (col.width < (col._minWidth) && col.elasticWidth) {
-			col._calcWidth = col._minWidth;
-		} else {
-			col._calcWidth = col.width;
+		if (isPercent(col.width)) {
+			col.width = getPercent(col.width) * initial_availableWidth;
 		}
 
+		col._calcWidth = col.width < (col._minWidth) && col.elasticWidth? col._minWidth : col.width;
 		availableWidth -= col._calcWidth;
 	});
 
 	// http://www.freesoft.org/CIE/RFC/1942/18.htm
 	// http://www.w3.org/TR/CSS2/tables.html#width-layout
 	// http://dev.w3.org/csswg/css3-tables-algorithms/Overview.src.htm
-	let minW = autoMin + starMaxMin * starColumns.length;
-	let maxW = autoMax + starMaxMax * starColumns.length;
+	let minW = autoMin + starMaxMin * totalStars ;
+	let maxW = autoMax + starMaxMax * totalStars ;
 	if (minW >= availableWidth) {
 		// case 1 - there's no way to fit all columns within available width
 		// that's actually pretty bad situation with PDF as we have no horizontal scroll
@@ -53,7 +51,7 @@ function buildColumnWidths(columns, availableWidth) {
 		});
 
 		starColumns.forEach(col => {
-			col._calcWidth = starMaxMin; // starMaxMin already contains padding
+			col._calcWidth = starMaxMin*numStars(col.width); // starMaxMin already contains padding
 		});
 	} else {
 		if (maxW < availableWidth) {
@@ -75,10 +73,10 @@ function buildColumnWidths(columns, availableWidth) {
 		}
 
 		if (starColumns.length > 0) {
-			let starSize = availableWidth / starColumns.length;
+			let starSize = availableWidth / totalStars;
 
 			starColumns.forEach(col => {
-				col._calcWidth = starSize;
+				col._calcWidth = starSize*numStars(col.width);
 			});
 		}
 	}
@@ -89,8 +87,26 @@ function isAutoColumn(column) {
 }
 
 function isStarColumn(column) {
-	return column.width === null || column.width === undefined || column.width === '*' || column.width === 'star';
+	return isStar(column.width);
 }
+
+function isStar(width) {
+	return (width === null || width === undefined) || (isString(width) && (width.charAt(0) === '*' || width === 'star')) ;
+}
+
+function numStars(width) {
+	return !width || width === '*' || width === 'star'? 1 : (parseInt(width.slice( 1 ), 10) || 1 );
+}
+
+
+function isPercent(width) {
+	return isString(width) && /\d+%/.test(width);
+}
+
+function getPercent(width) {
+	return parseFloat(width) / 100 ;
+}
+
 
 //TODO: refactor and reuse in measureTable
 function measureMinMax(columns) {
@@ -102,9 +118,10 @@ function measureMinMax(columns) {
 		let c = columns[i];
 
 		if (isStarColumn(c)) {
-			maxStar.min = Math.max(maxStar.min, c._minWidth);
-			maxStar.max = Math.max(maxStar.max, c._maxWidth);
-			starCount++;
+			const stars = numStars(c.width);
+			maxStar.min = Math.max(maxStar.min, c._minWidth/stars);
+			maxStar.max = Math.max(maxStar.max, c._maxWidth/stars);
+			starCount += stars;
 		} else if (isAutoColumn(c)) {
 			result.min += c._minWidth;
 			result.max += c._maxWidth;
@@ -129,5 +146,6 @@ export default {
 	buildColumnWidths: buildColumnWidths,
 	measureMinMax: measureMinMax,
 	isAutoColumn: isAutoColumn,
-	isStarColumn: isStarColumn
+	isStarColumn: isStarColumn,
+	numStars: numStars
 };
