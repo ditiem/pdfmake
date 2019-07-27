@@ -19,7 +19,8 @@ class DocumentContext extends EventEmitter {
 
 		this.snapshots = [];
 		this.endingCell = null;
-		this.backgroundLength = [];
+		// this.backgroundLength = [];
+	 this.userData = {};		
 
 		this.addPage(pageSize);
 	}
@@ -220,7 +221,7 @@ class DocumentContext extends EventEmitter {
 	addPage(pageSize) {
 		let page = { items: [], pageSize: pageSize };
 		this.pages.push(page);
-		this.backgroundLength.push(0);
+		// this.backgroundLength.push(0);
 		this.page = this.pages.length - 1;
 		this.initializePage();
 

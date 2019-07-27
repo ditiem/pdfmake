@@ -177,7 +177,7 @@ class LayoutBuilder {
 			pageBackground = this.docPreprocessor.preprocessDocument(pageBackground);
 			this.processNode(this.docMeasure.measureDocument(pageBackground));
 			this.writer.commitUnbreakableBlock(0, 0);
-			context.backgroundLength[context.page] += pageBackground.positions.length;
+			// context.backgroundLength[context.page] += pageBackground.positions.length;
 		}
 	}
 
@@ -715,7 +715,6 @@ class LayoutBuilder {
 		node.positions.push(position);
 
 		const context = this.writer.context();
-		context.backgroundLength[context.page] ++ ;
 	}
 
 	processCanvas(node) {

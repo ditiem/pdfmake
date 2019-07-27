@@ -369,14 +369,12 @@ class TableProcessor {
 			page: hasBreaks ? pageBreaks[0].prevPage : endingPage
 		});
 
-		if (hasBreaks) {
 			for (let i = 0, l = pageBreaks.length; i < l; i++) {
 				let pageBreak = pageBreaks[i];
 				ys[ys.length - 1].y1 = pageBreak.prevY;
 
 				ys.push({ y0: pageBreak.y, page: pageBreak.prevPage + 1 });
 			}
-		}
 
 		ys[ys.length - 1].y1 = endingY;
 
