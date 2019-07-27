@@ -68,7 +68,17 @@ class PdfPrinter {
 			builder.registerTableLayouts(options.tableLayouts);
 		}
 
-		let pages = builder.layoutDocument(docDefinition.content, this.pdfKitDoc, docDefinition.styles || {}, docDefinition.defaultStyle || { fontSize: 12, font: 'Roboto' }, docDefinition.background, docDefinition.header, docDefinition.footer, docDefinition.watermark, docDefinition.pageBreakBefore);
+	 const sections = docDefinition.sections? docDefinition.sections : [ docDefinition ] ;
+	 let pages = [].concat( ...sections.map( section => builder.layoutDocument( section.content
+				                                            , this.pdfKitDoc
+																																																, section.styles || {}
+																																																, section.defaultStyle || { fontSize: 12, font: 'Roboto' }
+																																																, section.background
+																																																, section.header
+																																																, section.footer
+																																																, section.watermark
+																																																, section.pageBreakBefore) ) ) ;
+
 		let maxNumberPages = docDefinition.maxPagesNumber || -1;
 		if (isNumber(maxNumberPages) && maxNumberPages > -1) {
 			pages = pages.slice(0, maxNumberPages);

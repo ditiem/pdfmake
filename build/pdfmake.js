@@ -61425,8 +61425,9 @@ function (_EventEmitter) {
     _this.availableHeight = 0;
     _this.page = -1;
     _this.snapshots = [];
-    _this.endingCell = null;
-    _this.backgroundLength = [];
+    _this.endingCell = null; // this.backgroundLength = [];
+
+    _this.userData = {};
 
     _this.addPage(pageSize);
 
@@ -61629,8 +61630,8 @@ function (_EventEmitter) {
       items: [],
       pageSize: pageSize
     };
-    this.pages.push(page);
-    this.backgroundLength.push(0);
+    this.pages.push(page); // this.backgroundLength.push(0);
+
     this.page = this.pages.length - 1;
     this.initializePage();
     this.emit('pageAdded');
@@ -62690,15 +62691,13 @@ function () {
       page: hasBreaks ? pageBreaks[0].prevPage : endingPage
     });
 
-    if (hasBreaks) {
-      for (var i = 0, l = pageBreaks.length; i < l; i++) {
-        var pageBreak = pageBreaks[i];
-        ys[ys.length - 1].y1 = pageBreak.prevY;
-        ys.push({
-          y0: pageBreak.y,
-          page: pageBreak.prevPage + 1
-        });
-      }
+    for (var i = 0, l = pageBreaks.length; i < l; i++) {
+      var pageBreak = pageBreaks[i];
+      ys[ys.length - 1].y1 = pageBreak.prevY;
+      ys.push({
+        y0: pageBreak.y,
+        page: pageBreak.prevPage + 1
+      });
     }
 
     ys[ys.length - 1].y1 = endingY;
@@ -63156,8 +63155,7 @@ function () {
       this.writer.beginUnbreakableBlock(pageSize.width, pageSize.height);
       pageBackground = this.docPreprocessor.preprocessDocument(pageBackground);
       this.processNode(this.docMeasure.measureDocument(pageBackground));
-      this.writer.commitUnbreakableBlock(0, 0);
-      context.backgroundLength[context.page] += pageBackground.positions.length;
+      this.writer.commitUnbreakableBlock(0, 0); // context.backgroundLength[context.page] += pageBackground.positions.length;
     }
   };
 
@@ -63726,7 +63724,6 @@ function () {
     var position = this.writer.addImage(node);
     node.positions.push(position);
     var context = this.writer.context();
-    context.backgroundLength[context.page]++;
   };
 
   _proto.processCanvas = function processCanvas(node) {
@@ -64482,6 +64479,9 @@ function () {
 
 
 
+function _readOnlyError(name) { throw new Error("\"" + name + "\" is read-only"); }
+
+
 
 
 
@@ -64526,6 +64526,9 @@ function () {
   var _proto = PdfPrinter.prototype;
 
   _proto.createPdfKitDocument = function createPdfKitDocument(docDefinition, options) {
+    var _ref,
+        _this = this;
+
     if (options === void 0) {
       options = {};
     }
@@ -64555,14 +64558,19 @@ function () {
       builder.registerTableLayouts(options.tableLayouts);
     }
 
-    var pages = builder.layoutDocument(docDefinition.content, this.pdfKitDoc, docDefinition.styles || {}, docDefinition.defaultStyle || {
-      fontSize: 12,
-      font: 'Roboto'
-    }, docDefinition.background, docDefinition.header, docDefinition.footer, docDefinition.watermark, docDefinition.pageBreakBefore);
+    var sections = docDefinition.sections ? docDefinition.sections : [docDefinition];
+
+    var pages = (_ref = []).concat.apply(_ref, sections.map(function (section) {
+      return builder.layoutDocument(section.content, _this.pdfKitDoc, section.styles || {}, section.defaultStyle || {
+        fontSize: 12,
+        font: 'Roboto'
+      }, section.background, section.header, section.footer, section.watermark, section.pageBreakBefore);
+    }));
+
     var maxNumberPages = docDefinition.maxPagesNumber || -1;
 
     if (Object(variableType["e" /* isNumber */])(maxNumberPages) && maxNumberPages > -1) {
-      pages = pages.slice(0, maxNumberPages);
+      pages = (_readOnlyError("pages"), pages.slice(0, maxNumberPages));
     } // if pageSize.height is set to Infinity, calculate the actual height of the page that
     // was laid out using the height of each of the items in the page.
 
