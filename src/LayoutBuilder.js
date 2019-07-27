@@ -32,6 +32,7 @@ class LayoutBuilder {
 		this.pageMargins = pageMargins;
 		this.svgMeasure = svgMeasure;
 		this.tableLayouts = {};
+		this.parentPositions = []; // Array<{x,y}>
 	}
 
 	registerTableLayouts(tableLayouts) {
@@ -195,10 +196,12 @@ class LayoutBuilder {
 
 			if (node) {
 				let sizes = sizeFunction(this.writer.context().getCurrentPage().pageSize, this.pageMargins);
+				this.writer.beginClipBBox(sizes);
 				this.writer.beginUnbreakableBlock(sizes.width, sizes.height);
 				node = this.docPreprocessor.preprocessDocument(node);
 				this.processNode(this.docMeasure.measureDocument(node));
 				this.writer.commitUnbreakableBlock(sizes.x, sizes.y);
+				this.writer.endClip( ) ;
 			}
 		}
 	}
@@ -297,6 +300,9 @@ class LayoutBuilder {
 	}
 
 	processNode(node) {
+		const context = this.writer.context()
+		    , nodeInitialPosition = { x: context.x, y: context.y } ;
+
 		const applyMargins = callback => {
 			let margin = node._margin;
 
@@ -330,6 +336,16 @@ class LayoutBuilder {
 				this.writer.beginUnbreakableBlock();
 			}
 
+			const relParentPosition = node.relativeParentPosition;
+			if (relParentPosition) {
+				const parentPos = this.parentPositions[ this.parentPositions.length - 1 ] || { x: 0, y: 0 } ;
+
+				this.writer.context().beginDetachedBlock();
+				this.writer.context().moveTo( (relParentPosition.x || 0) + parentPos.x
+				                            , (relParentPosition.y || 0) + parentPos.y ) ;
+			}
+
+
 			let absPosition = node.absolutePosition;
 			if (absPosition) {
 				this.writer.context().beginDetachedBlock();
@@ -341,6 +357,8 @@ class LayoutBuilder {
 				this.writer.context().beginDetachedBlock();
 				this.writer.context().moveToRelative(relPosition.x || 0, relPosition.y || 0);
 			}
+
+			this.parentPositions.push( nodeInitialPosition ) ;
 
 			if (node.stack) {
 				this.processVerticalContainer(node);
@@ -368,13 +386,15 @@ class LayoutBuilder {
 				throw new Error(`Unrecognized document structure: ${stringifyNode(node)}`);
 			}
 
-			if (absPosition || relPosition) {
+			if (absPosition || relPosition || relParentPosition) {
 				this.writer.context().endDetachedBlock();
 			}
 
 			if (unbreakable) {
 				this.writer.commitUnbreakableBlock();
 			}
+
+			this.parentPositions.pop( ) ;
 		});
 	}
 
@@ -693,6 +713,9 @@ class LayoutBuilder {
 	processImage(node) {
 		let position = this.writer.addImage(node);
 		node.positions.push(position);
+
+		const context = this.writer.context();
+		context.backgroundLength[context.page] ++ ;
 	}
 
 	processCanvas(node) {

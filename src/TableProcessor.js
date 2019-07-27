@@ -4,9 +4,11 @@ import { isFunction } from './helpers/variableType';
 class TableProcessor {
 	constructor(tableNode) {
 		this.tableNode = tableNode;
+		this.bgVectorIndex = [] ;
 	}
 
 	beginTable(writer) {
+		this.bgVectorIndex.push( writer.context().getCurrentPage().items.length ) ;
 		const getTableInnerContentWidth = () => {
 			let width = 0;
 
@@ -323,6 +325,7 @@ class TableProcessor {
 		if (this.cleanUpRepeatables) {
 			writer.popFromRepeatables();
 		}
+		this.bgVectorIndex.pop();
 	}
 
 	endRow(rowIndex, writer, pageBreaks) {
@@ -402,6 +405,7 @@ class TableProcessor {
 				let rightCellBorder = false;
 				let colIndex = xs[i].index;
 
+
 				// current cell
 				if (colIndex < body[rowIndex].length) {
 					let cell = body[rowIndex][colIndex];
@@ -453,7 +457,7 @@ class TableProcessor {
 							h: y2f - y1f,
 							lineWidth: 0,
 							color: fillColor
-						}, false, true, writer.context().backgroundLength[writer.context().page]);
+						}, false, true, this.bgVectorIndex[ this.bgVectorIndex.length - 1 ] );// writer.context().backgroundLength[writer.context().page]);
 					}
 				}
 			}

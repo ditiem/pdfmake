@@ -250,10 +250,16 @@ class ElementWriter extends EventEmitter {
 
 	beginClip(width, height) {
 		let ctx = this.context();
+		return this.beginClipBBox( { x: ctx.x, y: ctx.y, width, height }) ;
+	}
+
+
+	beginClipBBox(sizes) {
+		let ctx = this.context();
 		let page = ctx.getCurrentPage();
 		page.items.push({
 			type: 'beginClip',
-			item: { x: ctx.x, y: ctx.y, width: width, height: height }
+			item: sizes // x, y, width, heigh
 		});
 		return true;
 	}
